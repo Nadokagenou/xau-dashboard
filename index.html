@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0c0c0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>XAU Bot</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23e8b84a'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='700' font-size='26' text-anchor='middle' fill='%231a1405'%3EAu%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ───────── tokens ───────── */
+:root {
+  color-scheme: dark;
+  --bg: #0c0c0b;
+  --surface: #151513;
+  --surface-2: #1c1c19;
+  --line: #2a2925;
+  --line-soft: #211f1c;
+  --text: #f5f4ef;
+  --text-2: #bdbcb2;
+  --muted: #8a897f;
+  --gold: #e8b84a;
+  --gold-strong: #f3cd6d;
+  --gold-ink: #1a1405;
+  --gold-wash: rgba(232, 184, 74, .12);
+  --good: #45d064;
+  --good-mark: #0ca30c;
+  --good-wash: rgba(12, 163, 12, .16);
+  --bad: #ff7f76;
+  --bad-mark: #d03b3b;
+  --bad-wash: rgba(208, 59, 59, .18);
+  --warn: #fab219;
+  --warn-wash: rgba(250, 178, 25, .14);
+  --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 12px 32px -18px rgba(0,0,0,.8);
+  --radius: 20px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f4f3ee; --surface: #ffffff; --surface-2: #f8f7f3; --line: #e5e3db; --line-soft: #efede7;
+    --text: #161613; --text-2: #55544d; --muted: #77766d;
+    --gold: #a8790f; --gold-strong: #8c6409; --gold-ink: #fffaf0; --gold-wash: rgba(168,121,15,.10);
+    --good: #0a7d0a; --good-wash: rgba(12,163,12,.10); --bad: #b42f2f; --bad-wash: rgba(208,59,59,.10);
+    --warn: #9a6a00; --warn-wash: rgba(250,178,25,.16);
+    --shadow: 0 1px 2px rgba(20,20,10,.04), 0 10px 30px -20px rgba(60,50,20,.35);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f3ee; --surface: #ffffff; --surface-2: #f8f7f3; --line: #e5e3db; --line-soft: #efede7;
+  --text: #161613; --text-2: #55544d; --muted: #77766d;
+  --gold: #a8790f; --gold-strong: #8c6409; --gold-ink: #fffaf0; --gold-wash: rgba(168,121,15,.10);
+  --good: #0a7d0a; --good-wash: rgba(12,163,12,.10); --bad: #b42f2f; --bad-wash: rgba(208,59,59,.10);
+  --warn: #9a6a00; --warn-wash: rgba(250,178,25,.16);
+  --shadow: 0 1px 2px rgba(20,20,10,.04), 0 10px 30px -20px rgba(60,50,20,.35);
+}
+
+/* ───────── base ───────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 "IBM Plex Sans Thai", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+body::before {               /* faint gold glow behind the header */
+  content: ""; position: fixed; inset: -30vh -20vw auto; height: 60vh; pointer-events: none; z-index: 0;
+  background: radial-gradient(50% 60% at 50% 0%, var(--gold-wash), transparent 70%);
+}
+button { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.wrap { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 40px; }
+.muted { color: var(--muted); }
+.hidden { display: none !important; }
+
+/* ───────── header ───────── */
+.top { display: flex; align-items: center; gap: 12px; margin: 4px 0 18px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+.logo {
+  width: 40px; height: 40px; border-radius: 12px; flex: none; display: grid; place-items: center;
+  background: linear-gradient(145deg, var(--gold-strong), var(--gold)); color: var(--gold-ink);
+  font-weight: 700; font-size: 16px; box-shadow: 0 6px 18px -8px var(--gold);
+}
+.brand h1 { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -4px 0 14px; }
+.quote { font-size: 13px; white-space: nowrap; }
+.quote b { font-size: 15px; font-weight: 700; margin-left: 4px; }
+.brand p { margin: 0; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+  display: grid; place-items: center; cursor: pointer; color: var(--text-2); flex: none;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--muted); }
+.icon-btn svg { width: 18px; height: 18px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 10px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; background: var(--surface); border: 1px solid var(--line); white-space: nowrap;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); position: relative; flex: none; }
+.pill.ok .dot { background: var(--good-mark); }
+.pill.ok .dot::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--good-mark);
+  animation: ping 2s ease-out infinite; opacity: 0;
+}
+.pill.pause .dot { background: var(--warn); }
+.pill.stop .dot { background: var(--warn); }
+.pill.off .dot { background: var(--bad-mark); }
+.pill.off { color: var(--bad); border-color: color-mix(in srgb, var(--bad-mark) 40%, var(--line)); }
+@keyframes ping { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pill.ok .dot::after { animation: none; } }
+
+.banner {
+  display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; margin-bottom: 14px;
+  font-size: 14px; border: 1px solid var(--line); background: var(--surface);
+}
+.banner.warn { background: var(--warn-wash); border-color: transparent; }
+.banner.bad { background: var(--bad-wash); border-color: transparent; }
+.banner.demo { background: var(--gold-wash); border-color: transparent; }
+.banner b { font-weight: 600; }
+
+/* ───────── layout ───────── */
+.grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 880px) {
+  .grid { grid-template-columns: repeat(12, 1fr); }
+  .s8 { grid-column: span 8; } .s7 { grid-column: span 7; } .s5 { grid-column: span 5; } .s4 { grid-column: span 4; } .s12 { grid-column: span 12; }
+}
+.card {
+  background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--radius);
+  padding: 18px; box-shadow: var(--shadow); min-width: 0;
+}
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.card-h h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-2); }
+.section-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 26px 2px 12px; flex-wrap: wrap; }
+.section-h h2 { margin: 0; font-size: 18px; font-weight: 700; }
+
+/* ───────── hero ───────── */
+.hero { position: relative; overflow: hidden; }
+.hero::after {
+  content: ""; position: absolute; right: -60px; top: -80px; width: 260px; height: 260px; border-radius: 50%;
+  background: radial-gradient(circle, var(--gold-wash), transparent 70%); pointer-events: none;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 8px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .04em; background: var(--surface-2); color: var(--text-2);
+  border: 1px solid var(--line);
+}
+.badge.live { background: var(--gold); color: var(--gold-ink); border-color: transparent; }
+.big { font-size: clamp(34px, 9vw, 48px); font-weight: 700; line-height: 1.05; margin: 10px 0 2px; letter-spacing: -.02em; }
+.big .unit { font-size: .42em; font-weight: 600; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.usd { color: var(--text-2); font-size: 15px; }
+.hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.mini { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; min-width: 0; }
+.mini .k { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.mini .v { font-size: 16px; font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.up { color: var(--good); } .down { color: var(--bad); }
+.arrow { font-size: .8em; margin-right: 2px; }
+
+/* ───────── today ───────── */
+.pips { display: flex; gap: 8px; margin: 6px 0 10px; }
+.pip {
+  flex: 1; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 15px;
+  background: var(--surface-2); color: var(--muted); border: 1px dashed var(--line);
+}
+.pip.hit { background: var(--bad-wash); color: var(--bad); border: 1px solid transparent; }
+.today-line { display: flex; justify-content: space-between; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line-soft); font-size: 14px; }
+.today-line:first-of-type { border-top: 0; }
+.today-line .v { font-weight: 600; }
+
+/* ───────── position ───────── */
+.empty { display: grid; place-items: center; text-align: center; padding: 22px 8px 12px; color: var(--muted); }
+.empty .ring {
+  width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 10px;
+  background: var(--gold-wash); color: var(--gold);
+}
+.empty .ring svg { width: 24px; height: 24px; }
+.empty b { color: var(--text); font-weight: 600; display: block; margin-bottom: 2px; }
+.pos-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.side {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 10px;
+  font-weight: 700; font-size: 14px;
+}
+.side.buy { background: var(--good-wash); color: var(--good); }
+.side.sell { background: var(--bad-wash); color: var(--bad); }
+.pos-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.float { text-align: right; }
+.float .v { font-size: 26px; font-weight: 700; line-height: 1.1; }
+.float .k { font-size: 12px; color: var(--muted); }
+.ladder { position: relative; margin: 26px 4px 6px; height: 64px; }
+.track { position: absolute; left: 0; right: 0; top: 28px; height: 8px; border-radius: 99px; background: var(--surface-2); }
+.zone { position: absolute; top: 28px; height: 8px; }
+.zone.loss { background: linear-gradient(90deg, var(--bad-wash), transparent); border-radius: 99px 0 0 99px; }
+.zone.gain { background: linear-gradient(270deg, var(--good-wash), transparent); border-radius: 0 99px 99px 0; }
+.zone.move { border-radius: 99px; }
+.tick { position: absolute; top: 22px; width: 2px; height: 20px; border-radius: 2px; background: var(--muted); transform: translateX(-1px); }
+.tick.sl { background: var(--bad-mark); } .tick.tp { background: var(--good-mark); } .tick.en { background: var(--text-2); }
+.now {
+  position: absolute; top: 24px; width: 16px; height: 16px; border-radius: 50%; transform: translateX(-8px);
+  background: var(--gold); box-shadow: 0 0 0 3px var(--surface), 0 0 18px var(--gold);
+  transition: left .6s cubic-bezier(.2,.8,.2,1);
+}
+.now-label {
+  position: absolute; top: 0; transform: translateX(-50%); font-size: 12px; font-weight: 700; white-space: nowrap;
+  background: var(--gold); color: var(--gold-ink); padding: 1px 8px; border-radius: 7px; transition: left .6s cubic-bezier(.2,.8,.2,1);
+}
+.lad-labels { display: flex; justify-content: space-between; font-size: 12.5px; gap: 6px; }
+.lad-labels > div { min-width: 0; }
+.lad-labels .k { color: var(--muted); font-size: 11.5px; }
+.lad-labels .v { font-weight: 600; }
+.lad-labels > div:nth-child(2) { text-align: center; }
+.lad-labels > div:last-child { text-align: right; }
+.pos-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); font-size: 13px; color: var(--text-2); flex-wrap: wrap; }
+
+/* ───────── controls ───────── */
+.ctl { display: grid; gap: 10px; }
+.btn {
+  height: 50px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer;
+  font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform .08s ease, background .2s, border-color .2s;
+}
+.btn:active { transform: scale(.98); }
+.btn svg { width: 18px; height: 18px; }
+.btn.primary { background: var(--gold); color: var(--gold-ink); border-color: transparent; }
+.btn.primary:hover { background: var(--gold-strong); }
+.btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad-mark) 45%, var(--line)); background: transparent; }
+.btn.danger:hover { background: var(--bad-wash); }
+.btn[disabled] { opacity: .55; cursor: not-allowed; }
+.ctl-note { font-size: 12.5px; color: var(--muted); min-height: 18px; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: rot .8s linear infinite; display: inline-block; vertical-align: -2px; }
+@keyframes rot { to { transform: rotate(360deg); } }
+.rules { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rule { background: var(--surface-2); border-radius: 12px; padding: 9px 11px; }
+.rule .k { font-size: 11.5px; color: var(--muted); }
+.rule .v { font-size: 14px; font-weight: 600; }
+
+/* ───────── segmented ───────── */
+.seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.seg button {
+  border: 0; background: transparent; height: 32px; padding: 0 14px; border-radius: 9px; cursor: pointer;
+  color: var(--text-2); font-weight: 600; font-size: 13px;
+}
+.seg button[aria-pressed="true"] { background: var(--gold); color: var(--gold-ink); }
+
+/* ───────── chart ───────── */
+.chart-box { position: relative; height: 240px; touch-action: pan-y; outline: none; }
+.chart-box svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chart-box .grid-line { stroke: var(--line-soft); stroke-width: 1; }
+.chart-box .axis-t { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.chart-box .end-t { fill: var(--text); font-size: 12px; font-weight: 700; font-family: inherit; }
+.tip {
+  position: absolute; top: 0; pointer-events: none; z-index: 3; min-width: 150px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 9px 11px;
+  box-shadow: 0 12px 30px -12px rgba(0,0,0,.55); font-size: 12.5px; transition: opacity .12s;
+}
+.tip .tv { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+.tip .key { width: 12px; height: 2px; border-radius: 2px; background: var(--gold); flex: none; }
+.tip .ts { color: var(--muted); }
+.chart-empty { height: 240px; display: grid; place-items: center; color: var(--muted); text-align: center; font-size: 14px; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat { background: var(--surface-2); border-radius: 14px; padding: 12px; min-width: 0; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 22px; font-weight: 700; margin-top: 2px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat .s { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.winbar { display: flex; height: 6px; border-radius: 99px; overflow: hidden; margin-top: 8px; gap: 2px; background: var(--surface); }
+.winbar i { display: block; height: 100%; }
+
+/* ───────── lists ───────── */
+.list { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line-soft); }
+.row:first-child { border-top: 0; padding-top: 2px; }
+.row .t1 { font-weight: 600; font-size: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row .t2 { font-size: 12.5px; color: var(--muted); }
+.row .r { text-align: right; }
+.row .r .t1 { justify-content: flex-end; }
+.chip { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 6px; letter-spacing: .03em; }
+.chip.buy { background: var(--good-wash); color: var(--good); }
+.chip.sell { background: var(--bad-wash); color: var(--bad); }
+.chip.open { background: var(--gold-wash); color: var(--gold); }
+.chip.nc { background: var(--surface-2); color: var(--muted); }
+.side-ic {
+  width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-weight: 700; font-size: 15px;
+}
+.side-ic.buy { background: var(--good-wash); color: var(--good); }
+.side-ic.sell { background: var(--bad-wash); color: var(--bad); }
+.more { margin-top: 10px; width: 100%; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--text-2); cursor: pointer; font-weight: 600; }
+
+.ev { display: grid; grid-template-columns: 34px 1fr; gap: 11px; padding: 11px 0; border-top: 1px solid var(--line-soft); }
+.ev:first-child { border-top: 0; padding-top: 2px; }
+.ev-ic { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 16px; background: var(--surface-2); }
+.ev-ic.open, .ev-ic.win, .ev-ic.online, .ev-ic.resume { background: var(--good-wash); }
+.ev-ic.loss, .ev-ic.error, .ev-ic.offline, .ev-ic.stop { background: var(--bad-wash); }
+.ev-ic.skip, .ev-ic.warn, .ev-ic.pause, .ev-ic.edit { background: var(--warn-wash); }
+.ev-ic.start, .ev-ic.command, .ev-ic.watch { background: var(--gold-wash); }
+.ev-text { font-size: 13.5px; white-space: pre-wrap; word-break: break-word; }
+.ev-text .first { font-weight: 600; }
+.ev-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.feed { max-height: 560px; overflow: auto; margin-right: -8px; padding-right: 8px; }
+
+/* ───────── login ───────── */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; position: relative; z-index: 1; }
+.login-card { width: 100%; max-width: 380px; text-align: center; }
+.login-card .logo { width: 64px; height: 64px; border-radius: 20px; font-size: 24px; margin: 0 auto 18px; }
+.login-card h1 { margin: 0 0 4px; font-size: 24px; }
+.login-card p { margin: 0 0 22px; color: var(--muted); }
+.field { display: block; text-align: left; margin-bottom: 12px; }
+.field span { display: block; font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
+.field input {
+  width: 100%; height: 50px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); padding: 0 14px; font: inherit; font-size: 16px; outline: none;
+}
+.field input:focus { border-color: var(--gold); box-shadow: 0 0 0 4px var(--gold-wash); }
+.err { color: var(--bad); font-size: 13.5px; min-height: 20px; margin: 4px 0 8px; }
+.link { background: none; border: 0; color: var(--gold); cursor: pointer; font-weight: 600; padding: 8px; }
+
+/* ───────── modal ───────── */
+.modal { position: fixed; inset: 0; z-index: 10; display: grid; place-items: end center; background: rgba(0,0,0,.55); padding: 16px; backdrop-filter: blur(4px); }
+@media (min-width: 640px) { .modal { place-items: center; } }
+.sheet { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 22px; animation: up .22s cubic-bezier(.2,.8,.2,1); }
+.sheet h3 { margin: 0 0 6px; font-size: 18px; }
+.sheet p { margin: 0 0 18px; color: var(--text-2); font-size: 14px; }
+.sheet .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn.solid-danger { background: var(--bad-mark); color: #fff; border-color: transparent; }
+@keyframes up { from { transform: translateY(16px); opacity: 0; } }
+
+.foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 28px; }
+.skel { background: linear-gradient(90deg, var(--surface-2), var(--line-soft), var(--surface-2)); background-size: 200% 100%; animation: sh 1.4s infinite; border-radius: 8px; color: transparent !important; }
+@keyframes sh { to { background-position: -200% 0; } }
+</style>
+</head>
+<body>
+
+<!-- ───────── login ───────── -->
+<section id="login" class="login hidden">
+  <div class="login-card">
+    <div class="logo">Au</div>
+    <h1>XAU Bot</h1>
+    <p>เข้าสู่ระบบเพื่อดูบอทเทรดทองของคุณ</p>
+    <form id="login-form" autocomplete="on">
+      <label class="field"><span>อีเมล</span><input id="email" type="email" autocomplete="username" required></label>
+      <label class="field"><span>รหัสผ่าน</span><input id="password" type="password" autocomplete="current-password" required></label>
+      <div class="err" id="login-err" role="alert"></div>
+      <button class="btn primary" style="width:100%" id="login-btn" type="submit">เข้าสู่ระบบ</button>
+    </form>
+    <button class="link" id="try-demo" type="button">ดูตัวอย่างด้วยข้อมูลสมมติ</button>
+  </div>
+</section>
+
+<!-- ───────── app ───────── -->
+<main id="app" class="wrap hidden">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">Au</div>
+      <div style="min-width:0">
+        <h1>XAU Bot</h1>
+        <p id="sub">—</p>
+      </div>
+    </div>
+    <button class="icon-btn" id="theme-btn" aria-label="สลับโหมดสว่าง/มืด" title="สลับธีม">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <button class="icon-btn" id="logout-btn" aria-label="ออกจากระบบ" title="ออกจากระบบ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+  </header>
+
+  <div class="strip">
+    <div class="pill" id="status-pill" role="status"><span class="dot"></span><span id="status-text">กำลังโหลด…</span></div>
+    <div class="quote"><span class="muted" id="sym">XAUUSD</span> <b class="num" id="price">—</b></div>
+  </div>
+
+  <div id="banners"></div>
+
+  <div class="grid">
+    <!-- balance -->
+    <section class="card hero s8" aria-labelledby="bal-h">
+      <div class="card-h" style="margin-bottom:0">
+        <h2 id="bal-h">ยอดเงินในพอร์ต</h2>
+        <span class="badge" id="mode-badge">—</span>
+      </div>
+      <div class="big num"><span id="balance" class="skel">000,000.00</span><span class="unit" id="cur">USC</span></div>
+      <div class="usd num" id="balance-usd">&nbsp;</div>
+      <div class="hero-stats">
+        <div class="mini"><div class="k">Equity</div><div class="v num" id="equity">—</div></div>
+        <div class="mini"><div class="k">กำไรวันนี้</div><div class="v num" id="pnl-today">—</div></div>
+      </div>
+    </section>
+
+    <!-- today -->
+    <section class="card s4" aria-labelledby="today-h">
+      <div class="card-h"><h2 id="today-h">ไม้แพ้วันนี้</h2><span class="muted" style="font-size:12.5px" id="loss-rule">—</span></div>
+      <div class="pips" id="pips" aria-label="จำนวนไม้แพ้วันนี้"></div>
+      <div class="today-line"><span class="muted">สถานะ</span><span class="v" id="today-state">—</span></div>
+      <div class="today-line"><span class="muted">ไม้ที่ปิดวันนี้</span><span class="v num" id="today-count">—</span></div>
+      <div class="today-line"><span class="muted">รีเซ็ต</span><span class="v">เที่ยงคืน (เวลาไทย)</span></div>
+    </section>
+
+    <!-- open position -->
+    <section class="card s8" aria-labelledby="pos-h">
+      <div class="card-h"><h2 id="pos-h">ไม้ที่เปิดอยู่</h2><span class="muted num" style="font-size:12.5px" id="pos-ticket"></span></div>
+      <div id="position"></div>
+    </section>
+
+    <!-- controls -->
+    <section class="card s4" aria-labelledby="ctl-h">
+      <div class="card-h"><h2 id="ctl-h">ควบคุมบอท</h2></div>
+      <div class="ctl">
+        <button class="btn primary" id="pause-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
+          <span>พักบอท</span>
+        </button>
+        <button class="btn danger" id="close-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <span>ปิดไม้ทั้งหมดตอนนี้</span>
+        </button>
+        <div class="ctl-note" id="ctl-note" aria-live="polite"></div>
+      </div>
+      <div class="rules">
+        <div class="rule"><div class="k">เสี่ยงต่อไม้</div><div class="v num" id="r-risk">—</div></div>
+        <div class="rule"><div class="k">ไม้เปิดพร้อมกัน</div><div class="v">1 ไม้</div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="section-h">
+    <h2>ผลงาน</h2>
+    <div class="seg" role="group" aria-label="ช่วงเวลา" id="range">
+      <button data-days="7" aria-pressed="false">7 วัน</button>
+      <button data-days="30" aria-pressed="true">30 วัน</button>
+      <button data-days="0" aria-pressed="false">ทั้งหมด</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card s8" aria-labelledby="eq-h">
+      <div class="card-h"><h2 id="eq-h">ยอดเงินหลังปิดแต่ละไม้</h2><span class="muted num" style="font-size:12.5px" id="eq-change"></span></div>
+      <div id="chart"></div>
+    </section>
+    <section class="card s4" aria-labelledby="st-h">
+      <div class="card-h"><h2 id="st-h">สรุป</h2></div>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="card s7" aria-labelledby="tr-h">
+      <div class="card-h"><h2 id="tr-h">ประวัติการเทรด</h2><span class="muted" style="font-size:12.5px" id="tr-count"></span></div>
+      <div class="list" id="trades"></div>
+      <button class="more hidden" id="more-trades">ดูเพิ่ม</button>
+    </section>
+    <section class="card s5" aria-labelledby="ev-h">
+      <div class="card-h"><h2 id="ev-h">บอทกำลังทำอะไร</h2></div>
+      <div class="feed" id="events"></div>
+    </section>
+  </div>
+
+  <p class="foot">อัปเดตอัตโนมัติทุก 10 วินาที · <span id="updated">—</span></p>
+</main>
+
+<div id="modal-root"></div>
+
+<script>
+/* ═════════ ตั้งค่า (แก้ 2 บรรทัดนี้) ═════════
+   ค่าทั้งสองนี้เปิดเผยได้ (publishable/anon key) — ข้อมูลถูกล็อกด้วย RLS ให้เฉพาะอีเมลของคุณ
+   ห้ามใส่ secret / service_role key ลงไฟล์นี้เด็ดขาด */
+const SUPABASE_URL = "";               // เช่น https://abcdxyz.supabase.co
+const SUPABASE_PUBLISHABLE_KEY = "";   // เช่น sb_publishable_... หรือ anon key
+
+const REFRESH_MS = 10000;
+const OFFLINE_AFTER_S = 60;
+
+/* ═════════ helpers ═════════ */
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "style") el.style.cssText = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));  // text is never parsed as HTML
+  }
+  return el;
+}
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+const isCent = (c) => ["USC", "USX", "CENT", "USCENT"].includes(String(c || "").toUpperCase());
+const fmt = (n, d = 2) => n == null || isNaN(n) ? "—" : Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtSigned = (n, d = 2) => n == null || isNaN(n) ? "—" : (n > 0 ? "+" : n < 0 ? "−" : "") + fmt(Math.abs(n), d);
+function compact(n) {
+  const a = Math.abs(n);
+  if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
+  if (a >= 1e4) return (n / 1e3).toFixed(a >= 1e5 ? 0 : 1).replace(/\.0$/, "") + "K";
+  return Math.round(n).toLocaleString("en-US");
+}
+function money(n, cur, signed = false) {
+  const main = signed ? fmtSigned(n) : fmt(n);
+  return `${main} ${cur || ""}`.trim();
+}
+function usdLine(n, cur, signed = false) {
+  if (!isCent(cur) || n == null) return "";
+  const d = n / 100;
+  return "≈ " + (signed ? fmtSigned(d) : fmt(d)).replace(/^([+−]?)/, "$1$");
+}
+function pnlNode(n, cur, { usd = false, big = false } = {}) {
+  const cls = n > 0 ? "up" : n < 0 ? "down" : "";
+  const arrow = n > 0 ? "▲" : n < 0 ? "▼" : "";
+  const node = h("span", { class: `num ${cls}` }, arrow ? h("span", { class: "arrow", "aria-hidden": "true" }, arrow) : null, money(n, cur, true));
+  if (usd && isCent(cur)) node.append(h("span", { class: "muted", style: "font-weight:500;margin-left:6px;font-size:.8em" }, usdLine(n, cur, true)));
+  return node;
+}
+const TZ = "Asia/Bangkok";
+const bkkDay = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ });
+function when(iso) {
+  const d = new Date(iso), s = (Date.now() - d) / 1000;
+  if (s < 45) return "เมื่อสักครู่";
+  if (s < 3600) return `${Math.round(s / 60)} นาทีที่แล้ว`;
+  if (s < 6 * 3600) return `${Math.round(s / 3600)} ชม.ที่แล้ว`;
+  return d.toLocaleString("th-TH", { timeZone: TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+const shortDate = (d) => new Date(d).toLocaleDateString("th-TH", { timeZone: TZ, day: "numeric", month: "short" });
+const fullTime = (d) => new Date(d).toLocaleString("th-TH", { timeZone: TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+/* ═════════ theme ═════════ */
+function applyTheme(t) {
+  if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+  const dark = t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", dark ? "#0c0c0b" : "#f4f3ee");
+}
+applyTheme(store.get("xau.theme"));
+$("theme-btn").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark";
+  store.set("xau.theme", next); applyTheme(next); if (state.data) renderChart(true);
+});
+
+/* ═════════ data source: Supabase or demo ═════════ */
+const params = new URLSearchParams(location.search);
+const configured = SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY;
+let demo = params.has("demo") || !configured;
+const sb = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+
+const state = { data: null, days: 30, showTrades: 15, pending: null, lastCmdId: null, timer: null };
+
+async function fetchLive() {
+  const [st, tr, ev, cm] = await Promise.all([
+    sb.from("bot_status").select("*").eq("id", 1).maybeSingle(),
+    sb.from("trades").select("*").order("opened_at", { ascending: false }).limit(1000),
+    sb.from("events").select("*").order("at", { ascending: false }).limit(40),
+    sb.from("commands").select("*").order("id", { ascending: false }).limit(5),
+  ]);
+  const err = st.error || tr.error || ev.error || cm.error;
+  if (err) throw err;
+  return { status: st.data, trades: tr.data || [], events: ev.data || [], commands: cm.data || [] };
+}
+
+async function sendCommand(cmd) {
+  if (demo) return demoCommand(cmd);
+  const { error } = await sb.from("commands").insert({ cmd });
+  if (error) throw error;
+}
+
+/* ═════════ demo data (deterministic) ═════════ */
+let demoState = null;
+function buildDemo() {
+  let seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647, (seed - 1) / 2147483646);
+  const now = Date.now(), span = 34 * 86400e3, N = 46;
+  let bal = 100000, price = 3318;
+  const trades = [];
+  for (let i = 0; i < N; i++) {
+    const opened = new Date(now - span + (i / N) * span + rnd() * 3 * 3600e3);
+    const closed = new Date(+opened + (15 + rnd() * 260) * 60e3);
+    if (closed > now - 40 * 60e3) break;
+    const side = rnd() < .5 ? "BUY" : "SELL";
+    const slDist = 6 + rnd() * 5;
+    const vol = Math.floor((bal * .02) / (slDist * 100) * 100) / 100;
+    const risk = vol * slDist * 100;
+    const r = rnd();
+    const pnl = r < .54 ? risk * (.7 + rnd() * 1.3) : r < .66 ? -risk * (.04 + rnd() * .3) : -risk * (.9 + rnd() * .1);
+    price += (rnd() - .46) * 16;
+    const dir = side === "BUY" ? 1 : -1;
+    trades.push({
+      ticket: 81204410 + i * 173, side, volume: vol, price_open: +price.toFixed(2),
+      sl: +(price - dir * slDist).toFixed(2), tp: +(price + dir * slDist * 1.4).toFixed(2),
+      balance_at_open: +bal.toFixed(2), opened_at: opened.toISOString(), closed_at: closed.toISOString(),
+      pnl: +pnl.toFixed(2), counted_loss: pnl < 0 && (-pnl / bal) * 100 >= 1,
+    });
+    bal += pnl;
+  }
+  price = +(price + 2.4).toFixed(2);
+  const open = {
+    ticket: 81213077, side: "BUY", volume: Math.floor((bal * .02) / 700 * 100) / 100, price_open: +(price - 3.1).toFixed(2),
+    sl: +(price - 3.1 - 7).toFixed(2), tp: +(price - 3.1 + 9.5).toFixed(2),
+  };
+  const bid = price, ask = +(price + .18).toFixed(2);
+  open.profit = +((bid - open.price_open) * 100 * open.volume).toFixed(2);
+  trades.unshift({ ...open, balance_at_open: +bal.toFixed(2), opened_at: new Date(now - 26 * 60e3).toISOString(), closed_at: null, pnl: null, counted_loss: null });
+  trades.sort((a, b) => new Date(b.opened_at) - new Date(a.opened_at));
+  const today = bkkDay(now);
+  const closedToday = trades.filter((t) => t.closed_at && bkkDay(t.closed_at) === today);
+  const m = (min) => new Date(now - min * 60e3).toISOString();
+  const events = [
+    { at: m(26), kind: "open", text: `✅ เปิด BUY ${open.volume} lot @ ${open.price_open} (#${open.ticket})\nSL ${open.sl} | TP ${open.tp}\nเสี่ยง ${fmt(open.volume * 700)} USC (~$${fmt(open.volume * 7)}) (2.0%)` },
+    { at: m(41), kind: "skip", text: "⏭️ ข้ามสัญญาณ: SELL XAUUSD @ 3329 | SL 3336 | TP 3320\nเหตุผล: ราคาตอนนี้ 3324.6 ห่างจากราคาเข้า 3329 เกิน 3" },
+    { at: m(95), kind: "command", text: "🛠️ ทำตามคำสั่งช่อง: เลื่อน SL บังทุน\n• SL #81212904 → 3311.2" },
+    { at: m(180), kind: "win", text: "💰 ปิดไม้กำไร #81212904 BUY: +1,842.10 USC (~+$18.42) (+1.71%)" },
+    { at: m(260), kind: "warn", text: "⚠️ อ่านสัญญาณไม่ออก ไม่ได้เปิดไม้\nเหตุผล: SL 3340 อยู่ผิดฝั่งของราคาเข้า BUY\nข้อความ: GOLD BUY 3322 SL 3340 TP 3330" },
+    { at: m(410), kind: "loss", text: "🔻 ปิดไม้ขาดทุน #81212731 SELL: −2,104.55 USC (~−$21.05) (−1.98%)\nนับเป็นไม้แพ้ 1/3" },
+    { at: m(470), kind: "edit", text: "✏️ ช่องแก้ไขข้อความ (บอทไม่ทำตามข้อความที่ถูกแก้ ตรวจเองด้วย):\nXAUUSD SELL 3318 SL 3325 TP 3305" },
+    { at: m(720), kind: "start", text: "🤖 บอทเริ่มทำงาน\nฟังช่อง: Gold VIP Signals\nความเสี่ยง 2%/ไม้ | SL อัตโนมัติ 7 | ไม้เปิดพร้อมกัน 1" },
+  ];
+  return {
+    status: {
+      updated_at: new Date(now - 4000).toISOString(),
+      data: {
+        mode: "live", paused: false, symbol: "XAUUSDc", risk_pct: 2, max_losses: 3, loss_count_min_pct: 1,
+        losses_today: closedToday.filter((t) => t.counted_loss).length,
+        pnl_today: closedToday.reduce((s, t) => s + t.pnl, 0),
+        account: { balance: +bal.toFixed(2), equity: +(bal + open.profit).toFixed(2), currency: "USC", is_demo: false, login: 2410998, server: "Exness-MT5Real8" },
+        positions: [open], bid, ask,
+      },
+    },
+    trades, events, commands: [],
+  };
+}
+function demoTick() {
+  const d = demoState;
+  const p = d.status.data.positions[0];
+  d.status.updated_at = new Date().toISOString();
+  if (p) {
+    const drift = (Math.random() - .45) * 1.2;
+    d.status.data.bid = +Math.min(p.tp - .4, Math.max(p.sl + .4, d.status.data.bid + drift)).toFixed(2);
+    d.status.data.ask = +(d.status.data.bid + .18).toFixed(2);
+    p.profit = +((d.status.data.bid - p.price_open) * 100 * p.volume).toFixed(2);
+    d.status.data.account.equity = +(d.status.data.account.balance + p.profit).toFixed(2);
+  }
+  return JSON.parse(JSON.stringify(d));
+}
+function demoCommand(cmd) {
+  const c = { id: Date.now(), at: new Date().toISOString(), cmd, done_at: null, result: null };
+  demoState.commands.unshift(c);
+  setTimeout(() => {
+    const s = demoState.status.data;
+    if (cmd === "pause") { s.paused = true; c.result = "⏸️ พักแล้ว จะไม่เปิดไม้ใหม่ (ไม้ที่เปิดอยู่ยังมี SL/TP ตามเดิม)"; }
+    if (cmd === "resume") { s.paused = false; c.result = "▶️ กลับมารับสัญญาณแล้ว"; }
+    if (cmd === "closeall") {
+      const n = s.positions.length;
+      for (const p of s.positions) {
+        const t = demoState.trades.find((x) => x.ticket === p.ticket);
+        Object.assign(t, { closed_at: new Date().toISOString(), pnl: p.profit, counted_loss: p.profit < 0 && -p.profit / s.account.balance * 100 >= 1 });
+        s.account.balance = +(s.account.balance + p.profit).toFixed(2);
+        s.pnl_today += p.profit;
+        demoState.events.unshift({ at: new Date().toISOString(), kind: p.profit >= 0 ? "win" : "loss", text: `${p.profit >= 0 ? "💰 ปิดไม้กำไร" : "🔻 ปิดไม้ขาดทุน"} #${p.ticket} ${p.side}: ${fmtSigned(p.profit)} USC` });
+      }
+      s.positions = []; s.account.equity = s.account.balance;
+      c.result = `ปิดแล้ว ${n} ไม้`;
+    }
+    c.done_at = new Date().toISOString();
+    demoState.events.unshift({ at: c.done_at, kind: "command", text: `🛠️ คำสั่งจากหน้าเว็บ: ${cmd}\n${c.result}` });
+    refresh();
+  }, 1400);
+}
+
+/* ═════════ render: header + hero ═════════ */
+function render() {
+  const { status, trades, events, commands } = state.data;
+  const s = status?.data || {};
+  const acc = s.account || {};
+  const cur = acc.currency || "USD";
+  const age = status ? (Date.now() - new Date(status.updated_at)) / 1000 : Infinity;
+  const offline = age > OFFLINE_AFTER_S;
+  const stopped = s.losses_today >= s.max_losses;
+
+  // header
+  $("sub").textContent = [acc.server ? acc.server.replace(/-?MT5.*$/i, "") || acc.server : null, s.symbol, acc.login ? `#${acc.login}` : null].filter(Boolean).join(" · ") || "รอข้อมูลจากบอท";
+  const pill = $("status-pill");
+  let pc = "ok", pt = "ทำงานอยู่";
+  if (!status) { pc = "off"; pt = "ยังไม่มีข้อมูล"; }
+  else if (offline) { pc = "off"; pt = `ออฟไลน์ · ${when(status.updated_at).replace("ที่แล้ว", "")}`; }
+  else if (s.paused) { pc = "pause"; pt = "พักอยู่"; }
+  else if (stopped) { pc = "stop"; pt = "หยุดถึงพรุ่งนี้"; }
+  pill.className = `pill ${pc}`;
+  $("status-text").textContent = pt;
+
+  // banners
+  const b = $("banners"); b.replaceChildren();
+  if (demo) b.append(h("div", { class: "banner demo" }, "✨", h("div", {}, h("b", {}, "โหมดตัวอย่าง "), "ตัวเลขทั้งหมดเป็นข้อมูลสมมติ ปุ่มกดได้แต่ไม่มีผลกับบัญชีจริง")));
+  if (status && offline) b.append(h("div", { class: "banner bad" }, "🔴", h("div", {}, h("b", {}, "บอทไม่ส่งข้อมูลมา " + when(status.updated_at)), h("br"), "เช็ก VPS ว่ายังเปิดอยู่ และ run.bat ยังทำงาน — ไม้ที่เปิดอยู่ยังมี SL/TP ใน MT5 ตามปกติ")));
+  if (!status && !demo) b.append(h("div", { class: "banner warn" }, "⏳", h("div", {}, h("b", {}, "ยังไม่มีข้อมูลจากบอท "), "เช็กว่าใส่ SUPABASE_URL และ SUPABASE_SECRET_KEY ใน .env ของบอทแล้ว และอีเมลใน schema.sql ตรงกับที่ล็อกอิน")));
+  if (status && !offline && stopped) b.append(h("div", { class: "banner warn" }, "⛔", h("div", {}, h("b", {}, `แพ้ครบ ${s.max_losses} ไม้แล้ววันนี้ `), "บอทจะไม่เปิดไม้ใหม่จนถึงเที่ยงคืน (เวลาไทย)")));
+
+  // mode badge
+  const mb = $("mode-badge");
+  if (s.mode === "watch") { mb.className = "badge"; mb.textContent = "WATCH · ไม่ส่งออเดอร์"; }
+  else if (acc.is_demo) { mb.className = "badge"; mb.textContent = isCent(cur) ? "DEMO · CENT" : "DEMO"; }
+  else if (status) { mb.className = "badge live"; mb.textContent = isCent(cur) ? "LIVE · CENT" : "LIVE"; }
+
+  // balance
+  const bal = $("balance"); bal.classList.remove("skel");
+  bal.textContent = fmt(acc.balance);
+  $("cur").textContent = cur;
+  $("balance-usd").textContent = usdLine(acc.balance, cur) || " ";
+  $("equity").textContent = fmt(acc.equity);
+  $("pnl-today").replaceChildren(s.pnl_today == null ? "—" : pnlNode(s.pnl_today, ""));
+  $("price").textContent = s.bid ? fmt(s.bid) : "ตลาดปิด";
+  $("sym").textContent = s.symbol || "XAUUSD";
+
+  // today
+  const pips = $("pips"); pips.replaceChildren();
+  const maxL = s.max_losses || 3;
+  for (let i = 0; i < maxL; i++) {
+    const hit = i < (s.losses_today || 0);
+    pips.append(h("div", { class: `pip ${hit ? "hit" : ""}`, "aria-label": hit ? "แพ้" : "ยังไม่ใช้" }, hit ? "✕" : String(i + 1)));
+  }
+  $("loss-rule").textContent = `นับเมื่อขาดทุน ≥ ${s.loss_count_min_pct ?? 1}%`;
+  $("today-state").textContent = s.paused ? "⏸️ พักอยู่" : stopped ? "⛔ หยุดถึงพรุ่งนี้" : `รับได้อีก ${Math.max(0, maxL - (s.losses_today || 0))} ไม้แพ้`;
+  const today = bkkDay(Date.now());
+  $("today-count").textContent = `${trades.filter((t) => t.closed_at && bkkDay(t.closed_at) === today).length} ไม้`;
+
+  // rules + controls
+  const riskMoney = acc.balance && s.risk_pct ? acc.balance * s.risk_pct / 100 : null;
+  $("r-risk").textContent = s.risk_pct ? `${s.risk_pct}% ≈ ${compact(riskMoney)}` : "—";
+  renderControls(s, commands);
+  renderPosition(s, cur);
+  renderPerformance(cur);
+  renderTrades(cur);
+  renderEvents(events);
+  $("updated").textContent = status ? `บอทอัปเดตล่าสุด ${when(status.updated_at)}` : "ยังไม่มีข้อมูล";
+}
+
+/* ═════════ position ═════════ */
+function renderPosition(s, cur) {
+  const box = $("position"); box.replaceChildren();
+  const p = (s.positions || [])[0];
+  $("pos-ticket").textContent = p ? `#${p.ticket}` : "";
+  if (!p) {
+    const riskMoney = s.account?.balance && s.risk_pct ? s.account.balance * s.risk_pct / 100 : null;
+    box.append(h("div", { class: "empty" },
+      h("div", { class: "ring", "aria-hidden": "true" }, svgIcon("radar")),
+      h("b", {}, s.paused ? "บอทพักอยู่" : "ไม่มีไม้เปิดอยู่ · รอสัญญาณถัดไป"),
+      riskMoney ? `ไม้ถัดไปเสี่ยงได้สูงสุด ${money(riskMoney, cur)} ${usdLine(riskMoney, cur) ? "(" + usdLine(riskMoney, cur) + ")" : ""}` : ""));
+    return;
+  }
+  const buy = p.side === "BUY";
+  const now = buy ? s.bid : s.ask;
+  box.append(h("div", { class: "pos-top" },
+    h("div", {},
+      h("div", { class: "pos-meta" },
+        h("span", { class: `side ${buy ? "buy" : "sell"}` }, buy ? "▲ BUY" : "▼ SELL"),
+        h("span", { class: "num", style: "font-weight:600" }, `${p.volume} lot`),
+        h("span", { class: "muted num" }, `@ ${fmt(p.price_open)}`))),
+    h("div", { class: "float" }, h("div", { class: "v" }, pnlNode(p.profit, cur)), h("div", { class: "k num" }, usdLine(p.profit, cur, true) || "กำไร/ขาดทุนตอนนี้"))));
+
+  // price ladder: SL always on the left, TP on the right, whatever the direction
+  const tp = p.tp && p.tp > 0 ? p.tp : null;
+  const far = tp ?? (p.price_open + (p.price_open - p.sl) * 1.5);
+  const pts = [p.sl, p.price_open, far, now].filter((x) => x != null);
+  const lo = Math.min(...pts), hi = Math.max(...pts);
+  const pos = (x) => {
+    const f = (x - lo) / (hi - lo || 1);
+    return (buy ? f : 1 - f) * 100;
+  };
+  const L = h("div", { class: "ladder", role: "img", "aria-label": `ราคาตอนนี้ ${fmt(now)} ระหว่าง SL ${fmt(p.sl)} และ TP ${tp ? fmt(tp) : "ไม่มี"}` });
+  const en = pos(p.price_open);
+  L.append(h("div", { class: "track" }));
+  L.append(h("div", { class: "zone loss", style: `left:0;width:${en}%` }));
+  L.append(h("div", { class: "zone gain", style: `left:${en}%;right:0` }));
+  L.append(h("div", { class: "tick sl", style: `left:${pos(p.sl)}%` }));
+  L.append(h("div", { class: "tick en", style: `left:${en}%` }));
+  if (tp) L.append(h("div", { class: "tick tp", style: `left:${pos(tp)}%` }));
+  if (now != null) {
+    const x = Math.min(97, Math.max(3, pos(now)));
+    L.append(h("div", { class: "now", style: `left:${x}%` }));
+    L.append(h("div", { class: "now-label num", style: `left:${Math.min(88, Math.max(12, x))}%` }, fmt(now)));
+  }
+  box.append(L);
+  box.append(h("div", { class: "lad-labels" },
+    h("div", {}, h("div", { class: "k" }, "SL"), h("div", { class: "v num down" }, fmt(p.sl))),
+    h("div", {}, h("div", { class: "k" }, "ราคาเข้า"), h("div", { class: "v num" }, fmt(p.price_open))),
+    h("div", {}, h("div", { class: "k" }, "TP"), h("div", { class: "v num up" }, tp ? fmt(tp) : "ไม่มี"))));
+  if (now != null) {
+    box.append(h("div", { class: "pos-foot" },
+      h("span", { class: "num" }, `ห่าง SL ${fmt(Math.abs(now - p.sl))}`),
+      h("span", { class: "num" }, tp ? `ห่าง TP ${fmt(Math.abs(tp - now))}` : "ไม่มี TP — ปิดตาม SL หรือคำสั่งช่อง")));
+  }
+}
+
+/* ═════════ controls ═════════ */
+function renderControls(s, commands) {
+  const pending = (commands || []).find((c) => !c.done_at);
+  const last = (commands || []).find((c) => c.done_at);
+  const pb = $("pause-btn");
+  pb.querySelector("span").textContent = s.paused ? "เปิดบอทต่อ" : "พักบอท";
+  pb.querySelector("svg").innerHTML = s.paused
+    ? '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>'
+    : '<rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/>';
+  const busy = !!pending;
+  pb.disabled = busy;
+  $("close-btn").disabled = busy || !(s.positions || []).length;
+  const note = $("ctl-note"); note.replaceChildren();
+  if (pending) note.append(h("span", { class: "spin", "aria-hidden": "true" }), " ส่งคำสั่งแล้ว รอบอททำ (ไม่เกิน 5 วินาที)…");
+  else if (last && Date.now() - new Date(last.done_at) < 10 * 60e3) note.append(`ล่าสุด: ${last.result || last.cmd}`);
+}
+$("pause-btn").addEventListener("click", async () => {
+  const paused = state.data?.status?.data?.paused;
+  await runCommand(paused ? "resume" : "pause");
+});
+$("close-btn").addEventListener("click", () => {
+  const p = state.data?.status?.data?.positions?.[0];
+  confirmSheet("ปิดไม้ทั้งหมดตอนนี้?",
+    p ? `บอทจะปิดไม้ ${p.side} ${p.volume} lot ที่ราคาตลาดทันที (กำไร/ขาดทุนตอนนี้ ${fmtSigned(p.profit)})` : "บอทจะปิดทุกไม้ที่เปิดอยู่ที่ราคาตลาด",
+    "ปิดเลย", () => runCommand("closeall"));
+});
+async function runCommand(cmd) {
+  try {
+    $("pause-btn").disabled = true; $("close-btn").disabled = true;
+    const note = $("ctl-note"); note.replaceChildren(h("span", { class: "spin" }), " กำลังส่งคำสั่ง…");
+    await sendCommand(cmd);
+    await refresh();
+  } catch (e) {
+    $("ctl-note").textContent = "ส่งคำสั่งไม่สำเร็จ: " + (e.message || e);
+  }
+}
+function confirmSheet(title, body, okText, onOk) {
+  const root = $("modal-root");
+  const close = () => root.replaceChildren();
+  const m = h("div", { class: "modal", onclick: (e) => { if (e.target === m) close(); } },
+    h("div", { class: "sheet", role: "dialog", "aria-modal": "true", "aria-label": title },
+      h("h3", {}, title), h("p", {}, body),
+      h("div", { class: "btns" },
+        h("button", { class: "btn", onclick: close }, "ยกเลิก"),
+        h("button", { class: "btn solid-danger", onclick: () => { close(); onOk(); } }, okText))));
+  root.replaceChildren(m);
+  m.querySelector(".btn").focus();
+  const esc = (e) => { if (e.key === "Escape") { close(); removeEventListener("keydown", esc); } };
+  addEventListener("keydown", esc);
+}
+
+/* ═════════ performance: chart + stats ═════════ */
+function closedInRange() {
+  const all = state.data.trades.filter((t) => t.closed_at && t.pnl != null)
+    .sort((a, b) => new Date(a.closed_at) - new Date(b.closed_at));
+  if (!state.days) return all;
+  const from = Date.now() - state.days * 86400e3;
+  return all.filter((t) => new Date(t.closed_at) >= from);
+}
+function renderPerformance(cur) {
+  renderChart();
+  const ts = closedInRange();
+  const wins = ts.filter((t) => t.pnl > 0), losses = ts.filter((t) => t.pnl < 0);
+  const net = ts.reduce((s, t) => s + Number(t.pnl), 0);
+  const avgW = wins.length ? wins.reduce((s, t) => s + Number(t.pnl), 0) / wins.length : null;
+  const avgL = losses.length ? losses.reduce((s, t) => s + Number(t.pnl), 0) / losses.length : null;
+  const rate = ts.length ? Math.round(wins.length / ts.length * 100) : null;
+  const box = $("stats"); box.replaceChildren();
+  const wPct = ts.length ? wins.length / ts.length * 100 : 0, lPct = ts.length ? losses.length / ts.length * 100 : 0;
+  box.append(
+    h("div", { class: "stat" }, h("div", { class: "k" }, "อัตราชนะ"), h("div", { class: "v num" }, rate == null ? "—" : `${rate}%`),
+      h("div", { class: "s" }, `ชนะ ${wins.length} · แพ้ ${losses.length}`),
+      h("div", { class: "winbar", "aria-hidden": "true" },
+        h("i", { style: `width:${wPct}%;background:var(--good-mark)` }), h("i", { style: `width:${lPct}%;background:var(--bad-mark)` }))),
+    h("div", { class: "stat" }, h("div", { class: "k" }, "กำไรสุทธิ"), h("div", { class: "v" }, ts.length ? pnlNode(net, "") : "—"),
+      h("div", { class: "s num" }, usdLine(net, cur, true) || cur)),
+    h("div", { class: "stat" }, h("div", { class: "k" }, "เฉลี่ยไม้ชนะ"), h("div", { class: "v" }, avgW == null ? "—" : pnlNode(avgW, "")), h("div", { class: "s" }, cur)),
+    h("div", { class: "stat" }, h("div", { class: "k" }, "เฉลี่ยไม้แพ้"), h("div", { class: "v" }, avgL == null ? "—" : pnlNode(avgL, "")), h("div", { class: "s" }, cur)),
+  );
+}
+
+let chartPts = [];
+let chartKey = "";
+function renderChart(force = false) {
+  const box = $("chart");
+  const cur = state.data?.status?.data?.account?.currency || "";
+  const ts = closedInRange();
+  // the page refreshes every few seconds; redrawing an unchanged chart would kill an open tooltip
+  const last = ts[ts.length - 1];
+  const key = [state.days, ts.length, last?.ticket, last?.closed_at, box.clientWidth, document.documentElement.getAttribute("data-theme")].join("|");
+  if (!force && key === chartKey && box.firstChild) return;
+  chartKey = key;
+  if (ts.length < 2) {
+    box.replaceChildren(h("div", { class: "chart-empty" }, ts.length ? "ปิดไปแล้ว 1 ไม้ — กราฟจะขึ้นเมื่อมีอย่างน้อย 2 ไม้" : "ยังไม่มีไม้ที่ปิดในช่วงนี้"));
+    $("eq-change").textContent = "";
+    return;
+  }
+  // first point = balance before the first trade in range, then the balance after each close
+  chartPts = [{ t: new Date(ts[0].opened_at), v: Number(ts[0].balance_at_open), trade: null }]
+    .concat(ts.map((t) => ({ t: new Date(t.closed_at), v: Number(t.balance_at_open) + Number(t.pnl), trade: t })));
+  const first = chartPts[0].v, lastV = chartPts[chartPts.length - 1].v;
+  const ch = lastV - first, chPct = first ? ch / first * 100 : 0;
+  $("eq-change").replaceChildren(pnlNode(ch, ""), h("span", { class: "muted" }, ` (${chPct >= 0 ? "+" : "−"}${Math.abs(chPct).toFixed(1)}%)`));
+
+  const wrap = h("div", { class: "chart-box", tabindex: "0", "aria-label": `กราฟยอดเงิน จาก ${fmt(first)} เป็น ${fmt(lastV)} ${cur}` });
+  box.replaceChildren(wrap);
+  const W = wrap.clientWidth || 600, H = wrap.clientHeight || 240;
+  const pad = { l: 44, r: 16, t: 14, b: 26 };
+  const vs = chartPts.map((p) => p.v);
+  let min = Math.min(...vs), max = Math.max(...vs);
+  const span = max - min || max * .02 || 1;
+  min -= span * .12; max += span * .12;
+  const step = niceStep((max - min) / 4);
+  min = Math.floor(min / step) * step; max = Math.ceil(max / step) * step;
+  const t0 = +chartPts[0].t, t1 = +chartPts[chartPts.length - 1].t;
+  const x = (t) => pad.l + ((+t - t0) / (t1 - t0 || 1)) * (W - pad.l - pad.r);
+  const y = (v) => pad.t + (1 - (v - min) / (max - min || 1)) * (H - pad.t - pad.b);
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, "aria-hidden": "true" });
+
+  const defs = s("defs", {});
+  const grad = s("linearGradient", { id: "eqfill", x1: 0, y1: 0, x2: 0, y2: 1 });
+  grad.append(s("stop", { offset: "0%", "stop-color": "var(--gold)", "stop-opacity": .22 }), s("stop", { offset: "100%", "stop-color": "var(--gold)", "stop-opacity": 0 }));
+  defs.append(grad); svg.append(defs);
+
+  for (let v = min; v <= max + step / 2; v += step) {
+    svg.append(s("line", { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), class: "grid-line" }));
+    const t = s("text", { x: pad.l - 8, y: y(v) + 4, "text-anchor": "end", class: "axis-t" }); t.textContent = compact(v); svg.append(t);
+  }
+  const nX = W < 420 ? 3 : 5;
+  for (let i = 0; i < nX; i++) {
+    const tt = t0 + (t1 - t0) * (i / (nX - 1));
+    const t = s("text", { x: x(tt), y: H - 6, "text-anchor": i === 0 ? "start" : i === nX - 1 ? "end" : "middle", class: "axis-t" });
+    t.textContent = shortDate(tt); svg.append(t);
+  }
+  const line = chartPts.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join("");
+  svg.append(s("path", { d: `${line}L${x(t1)},${y(min)}L${x(t0)},${y(min)}Z`, fill: "url(#eqfill)" }));
+  svg.append(s("path", { d: line, fill: "none", stroke: "var(--gold)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  const lp = chartPts[chartPts.length - 1];
+  svg.append(s("circle", { cx: x(lp.t), cy: y(lp.v), r: 4.5, fill: "var(--gold)", stroke: "var(--surface)", "stroke-width": 2 }));
+
+  const cross = s("line", { y1: pad.t, y2: H - pad.b, stroke: "var(--muted)", "stroke-width": 1, opacity: 0 });
+  const hdot = s("circle", { r: 5, fill: "var(--gold)", stroke: "var(--surface)", "stroke-width": 2, opacity: 0 });
+  svg.append(cross, hdot);
+  wrap.append(svg);
+
+  const tip = h("div", { class: "tip", style: "opacity:0" });
+  wrap.append(tip);
+  let idx = -1;
+  const show = (i) => {
+    idx = i; const p = chartPts[i]; const px = x(p.t), py = y(p.v);
+    cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("opacity", .6);
+    hdot.setAttribute("cx", px); hdot.setAttribute("cy", py); hdot.setAttribute("opacity", 1);
+    tip.replaceChildren(
+      h("div", { class: "tv num" }, h("span", { class: "key" }), `${fmt(p.v)} ${cur}`),
+      p.trade ? h("div", { class: "num", style: "margin-top:3px" }, `${p.trade.side} ${p.trade.volume} lot · `, pnlNode(Number(p.trade.pnl), "")) : h("div", { class: "muted" }, "ยอดเริ่มต้นของช่วงนี้"),
+      h("div", { class: "ts" }, fullTime(p.t)));
+    tip.style.opacity = 1;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.min(W - tw, Math.max(0, px - tw / 2)) + "px";
+    tip.style.top = Math.max(0, py - tip.offsetHeight - 14) + "px";
+    if (py - tip.offsetHeight - 14 < 0) tip.style.top = (py + 14) + "px";
+  };
+  const hide = () => { cross.setAttribute("opacity", 0); hdot.setAttribute("opacity", 0); tip.style.opacity = 0; idx = -1; };
+  const nearest = (clientX) => {
+    const r = wrap.getBoundingClientRect(); const mx = clientX - r.left;
+    let best = 0, bd = Infinity;
+    chartPts.forEach((p, i) => { const d = Math.abs(x(p.t) - mx); if (d < bd) { bd = d; best = i; } });
+    return best;
+  };
+  wrap.addEventListener("pointermove", (e) => show(nearest(e.clientX)));
+  wrap.addEventListener("pointerdown", (e) => show(nearest(e.clientX)));
+  wrap.addEventListener("pointerleave", hide);
+  wrap.addEventListener("blur", hide);
+  wrap.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      const n = idx < 0 ? chartPts.length - 1 : Math.min(chartPts.length - 1, Math.max(0, idx + (e.key === "ArrowRight" ? 1 : -1)));
+      show(n);
+    }
+  });
+}
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const f = raw / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+
+/* ═════════ trades + events ═════════ */
+function renderTrades(cur) {
+  const list = $("trades"); list.replaceChildren();
+  const all = state.data.trades;
+  $("tr-count").textContent = all.length ? `${all.filter((t) => t.closed_at).length} ไม้ที่ปิดแล้ว` : "";
+  if (!all.length) { list.append(h("div", { class: "empty" }, h("b", {}, "ยังไม่มีการเทรด"), "ไม้แรกจะขึ้นที่นี่ทันทีที่บอทเปิด")); }
+  for (const t of all.slice(0, state.showTrades)) {
+    const buy = t.side === "BUY";
+    const open = !t.closed_at;
+    const pct = !open && t.balance_at_open ? Number(t.pnl) / Number(t.balance_at_open) * 100 : null;
+    list.append(h("div", { class: "row" },
+      h("div", { class: `side-ic ${buy ? "buy" : "sell"}`, "aria-label": t.side }, buy ? "▲" : "▼"),
+      h("div", { style: "min-width:0" },
+        h("div", { class: "t1" }, h("span", { class: "num" }, `${t.side} ${t.volume} lot`),
+          open ? h("span", { class: "chip open" }, "เปิดอยู่") : null,
+          !open && t.pnl < 0 && !t.counted_loss ? h("span", { class: "chip nc", title: "ขาดทุนไม่ถึงเกณฑ์ ไม่นับเป็นไม้แพ้" }, "ไม่นับแพ้") : null),
+        h("div", { class: "t2 num" }, `@ ${fmt(t.price_open)} · ${fullTime(open ? t.opened_at : t.closed_at)}`)),
+      h("div", { class: "r" },
+        h("div", { class: "t1" }, open ? h("span", { class: "muted" }, "—") : pnlNode(Number(t.pnl), "")),
+        h("div", { class: "t2 num" }, pct == null ? "" : `${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}%`))));
+  }
+  $("more-trades").classList.toggle("hidden", all.length <= state.showTrades);
+}
+$("more-trades").addEventListener("click", () => { state.showTrades += 30; renderTrades(state.data?.status?.data?.account?.currency); });
+
+const KIND_ICON = { open: "✅", win: "💰", loss: "🔻", skip: "⏭️", warn: "⚠️", error: "❌", command: "🛠️", stop: "⛔", watch: "👀", info: "ℹ️", start: "🤖", offline: "🔴", online: "🟢", edit: "✏️", pause: "⏸️", resume: "▶️" };
+function renderEvents(events) {
+  const box = $("events"); box.replaceChildren();
+  if (!events.length) { box.append(h("div", { class: "empty" }, h("b", {}, "ยังเงียบอยู่"), "ทุกครั้งที่บอทเปิด/ปิด/ข้ามสัญญาณ จะขึ้นที่นี่ พร้อมเหตุผล")); return; }
+  for (const e of events) {
+    const icon = KIND_ICON[e.kind] || "ℹ️";
+    // strip the leading emoji (shown in the badge), keep the bot's own wording
+    const body = String(e.text || "").replace(/^[\p{Extended_Pictographic}️‍]+\s*/u, "");
+    const [first, ...rest] = body.split("\n");
+    box.append(h("div", { class: "ev" },
+      h("div", { class: `ev-ic ${e.kind}`, "aria-hidden": "true" }, icon),
+      h("div", { style: "min-width:0" },
+        h("div", { class: "ev-text" }, h("span", { class: "first" }, first), rest.length ? "\n" + rest.join("\n") : ""),
+        h("div", { class: "ev-time" }, when(e.at)))));
+  }
+}
+
+function svgIcon(name) {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "2"); svg.setAttribute("stroke-linecap", "round");
+  svg.innerHTML = name === "radar"
+    ? '<circle cx="12" cy="12" r="9" opacity=".35"/><circle cx="12" cy="12" r="5" opacity=".6"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><path d="M12 12l6-6"/>'
+    : "";
+  return svg;
+}
+
+/* ═════════ range filter ═════════ */
+$("range").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.days = Number(b.dataset.days);
+  store.set("xau.days", String(state.days));
+  for (const x of $("range").querySelectorAll("button")) x.setAttribute("aria-pressed", String(x === b));
+  if (state.data) renderPerformance(state.data.status?.data?.account?.currency);
+});
+(() => {
+  const saved = store.get("xau.days");
+  if (saved != null && ["0", "7", "30"].includes(saved)) {
+    state.days = Number(saved);
+    for (const x of $("range").querySelectorAll("button")) x.setAttribute("aria-pressed", String(x.dataset.days === saved));
+  }
+})();
+
+/* ═════════ lifecycle ═════════ */
+async function refresh() {
+  try {
+    state.data = demo ? demoTick() : await fetchLive();
+    render();
+  } catch (e) {
+    console.error(e);
+    const b = $("banners");
+    b.replaceChildren(h("div", { class: "banner bad" }, "⚠️", h("div", {}, h("b", {}, "โหลดข้อมูลไม่ได้ "), String(e.message || e))));
+  }
+}
+function startApp() {
+  $("login").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("logout-btn").classList.toggle("hidden", demo);
+  if (demo && !demoState) demoState = buildDemo();
+  refresh();
+  clearInterval(state.timer);
+  state.timer = setInterval(refresh, demo ? 3000 : REFRESH_MS);
+}
+function showLogin() {
+  clearInterval(state.timer);
+  $("app").classList.add("hidden");
+  $("login").classList.remove("hidden");
+  $("try-demo").classList.toggle("hidden", false);
+}
+let resizeT;
+addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => state.data && renderChart(true), 120); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("app").classList.contains("hidden")) refresh(); });
+
+$("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("login-btn"); btn.disabled = true; $("login-err").textContent = "";
+  const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
+  btn.disabled = false;
+  if (error) { $("login-err").textContent = error.message === "Invalid login credentials" ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : error.message; return; }
+  demo = false; startApp();
+});
+$("try-demo").addEventListener("click", () => { demo = true; startApp(); });
+$("logout-btn").addEventListener("click", async () => { if (sb) await sb.auth.signOut(); showLogin(); });
+
+(async () => {
+  if (demo) return startApp();
+  const { data } = await sb.auth.getSession();
+  if (data.session) startApp(); else showLogin();
+})();
+</script>
+</body>
+</html>
