@@ -344,13 +344,16 @@ button { font: inherit; color: inherit; }
   <div class="login-card">
     <div class="logo">Au</div>
     <h1>XAU Bot</h1>
-    <p>เข้าสู่ระบบเพื่อดูบอทเทรดทองของคุณ</p>
+    <p>ใส่อีเมล แล้วกดลิงก์ที่ส่งไป — ไม่ต้องใช้รหัสผ่าน</p>
     <form id="login-form" autocomplete="on">
-      <label class="field"><span>อีเมล</span><input id="email" type="email" autocomplete="username" required></label>
-      <label class="field"><span>รหัสผ่าน</span><input id="password" type="password" autocomplete="current-password" required></label>
+      <label class="field"><span>อีเมล</span><input id="email" type="email" autocomplete="email" inputmode="email" required></label>
       <div class="err" id="login-err" role="alert"></div>
-      <button class="btn primary" style="width:100%" id="login-btn" type="submit">เข้าสู่ระบบ</button>
+      <button class="btn primary" style="width:100%" id="login-btn" type="submit">ส่งลิงก์เข้าสู่ระบบ</button>
     </form>
+    <div id="login-sent" class="hidden">
+      <div class="banner demo" style="text-align:left">📬<div><b>ส่งลิงก์แล้ว</b><br>เปิดอีเมล <span id="sent-to"></span> แล้วกดลิงก์ "Log In" — จะกลับมาหน้านี้และเข้าระบบเอง<br><span class="muted">ไม่เจอ? ดูในจดหมายขยะ · ลิงก์ใช้ได้ครั้งเดียว</span></div></div>
+      <button class="link" id="resend" type="button">ใช้อีเมลอื่น / ส่งใหม่</button>
+    </div>
     <button class="link" id="try-demo" type="button">ดูตัวอย่างด้วยข้อมูลสมมติ</button>
   </div>
 </section>
@@ -470,8 +473,8 @@ button { font: inherit; color: inherit; }
 /* ═════════ ตั้งค่า (แก้ 2 บรรทัดนี้) ═════════
    ค่าทั้งสองนี้เปิดเผยได้ (publishable/anon key) — ข้อมูลถูกล็อกด้วย RLS ให้เฉพาะอีเมลของคุณ
    ห้ามใส่ secret / service_role key ลงไฟล์นี้เด็ดขาด */
-const SUPABASE_URL = "";               // เช่น https://abcdxyz.supabase.co
-const SUPABASE_PUBLISHABLE_KEY = "";   // เช่น sb_publishable_... หรือ anon key
+const SUPABASE_URL = "https://osgsvvhsyargixphfqym.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_BNc2lcgiqftVQKUMYSDZOw_lfh13w9t";
 
 const REFRESH_MS = 10000;
 const OFFLINE_AFTER_S = 60;
@@ -1089,19 +1092,40 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && !$
 
 $("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const email = $("email").value.trim();
   const btn = $("login-btn"); btn.disabled = true; $("login-err").textContent = "";
-  const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
   btn.disabled = false;
-  if (error) { $("login-err").textContent = error.message === "Invalid login credentials" ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : error.message; return; }
-  demo = false; startApp();
+  if (error) {
+    const m = error.message || "";
+    $("login-err").textContent = /signups? not allowed/i.test(m) ? "อีเมลนี้ไม่มีสิทธิ์เข้าระบบ"
+      : /rate limit|seconds/i.test(m) ? "ส่งลิงก์ถี่เกินไป รอสักครู่แล้วลองใหม่" : m;
+    return;
+  }
+  store.set("xau.email", email);
+  $("sent-to").textContent = email;
+  $("login-form").classList.add("hidden");
+  $("login-sent").classList.remove("hidden");
 });
+$("resend").addEventListener("click", () => {
+  $("login-sent").classList.add("hidden");
+  $("login-form").classList.remove("hidden");
+});
+if (store.get("xau.email")) $("email").value = store.get("xau.email");
 $("try-demo").addEventListener("click", () => { demo = true; startApp(); });
 $("logout-btn").addEventListener("click", async () => { if (sb) await sb.auth.signOut(); showLogin(); });
 
 (async () => {
   if (demo) return startApp();
+  // the magic link lands back here with the session in the URL; supabase-js picks it up
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_IN" && session && $("app").classList.contains("hidden")) {
+      history.replaceState(null, "", location.pathname);
+      demo = false; startApp();
+    }
+  });
   const { data } = await sb.auth.getSession();
-  if (data.session) startApp(); else showLogin();
+  if (data.session) { history.replaceState(null, "", location.pathname); startApp(); } else showLogin();
 })();
 </script>
 </body>
