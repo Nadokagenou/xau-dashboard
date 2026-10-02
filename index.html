@@ -597,7 +597,8 @@ function buildDemo() {
     price += (rnd() - .46) * 16;
     const dir = side === "BUY" ? 1 : -1;
     trades.push({
-      ticket: 81204410 + i * 173, side, volume: vol, price_open: +price.toFixed(2),
+      ticket: 81204410 + i * 173, side, volume: vol, price_open: +price.toFixed(2), entry: +price.toFixed(2),
+      status: "closed", order_kind: rnd() < .7 ? "limit" : "market", source: rnd() < .6 ? "XAU_CRYPTO_VIP💵💵💵" : "บันทึกการเทรด",
       sl: +(price - dir * slDist).toFixed(2), tp: +(price + dir * slDist * 1.4).toFixed(2),
       balance_at_open: +bal.toFixed(2), opened_at: opened.toISOString(), closed_at: closed.toISOString(),
       pnl: +pnl.toFixed(2), counted_loss: pnl < 0 && (-pnl / bal) * 100 >= 1,
@@ -611,7 +612,8 @@ function buildDemo() {
   };
   const bid = price, ask = +(price + .18).toFixed(2);
   open.profit = +((bid - open.price_open) * 100 * open.volume).toFixed(2);
-  trades.unshift({ ...open, balance_at_open: +bal.toFixed(2), opened_at: new Date(now - 26 * 60e3).toISOString(), closed_at: null, pnl: null, counted_loss: null });
+  open.source = "XAU_CRYPTO_VIP💵💵💵"; open.partial_done = false;
+  trades.unshift({ ...open, entry: open.price_open, status: "open", order_kind: "limit", balance_at_open: +bal.toFixed(2), opened_at: new Date(now - 26 * 60e3).toISOString(), closed_at: null, pnl: null, counted_loss: null });
   trades.sort((a, b) => new Date(b.opened_at) - new Date(a.opened_at));
   const today = bkkDay(now);
   const closedToday = trades.filter((t) => t.closed_at && bkkDay(t.closed_at) === today);
@@ -634,7 +636,7 @@ function buildDemo() {
         losses_today: closedToday.filter((t) => t.counted_loss).length,
         pnl_today: closedToday.reduce((s, t) => s + t.pnl, 0),
         account: { balance: +bal.toFixed(2), equity: +(bal + open.profit).toFixed(2), currency: "USC", is_demo: false, login: 2410998, server: "Exness-MT5Real8" },
-        positions: [open], bid, ask,
+        positions: [open], pending: [], bid, ask, sources: ["XAU_CRYPTO_VIP💵💵💵", "บันทึกการเทรด"],
       },
     },
     trades, events, commands: [],
@@ -690,6 +692,7 @@ function render() {
 
   // header
   $("sub").textContent = [acc.server ? acc.server.replace(/-?MT5.*$/i, "") || acc.server : null, s.symbol, acc.login ? `#${acc.login}` : null].filter(Boolean).join(" · ") || "รอข้อมูลจากบอท";
+  if (s.sources && s.sources.length) $("sub").title = "ฟังช่อง: " + s.sources.join(", ");
   const pill = $("status-pill");
   let pc = "ok", pt = "ทำงานอยู่";
   if (!status) { pc = "off"; pt = "ยังไม่มีข้อมูล"; }
@@ -749,7 +752,31 @@ function render() {
 function renderPosition(s, cur) {
   const box = $("position"); box.replaceChildren();
   const p = (s.positions || [])[0];
-  $("pos-ticket").textContent = p ? `#${p.ticket}` : "";
+  const o = (s.pending || [])[0];
+  $("pos-ticket").textContent = p ? `#${p.ticket}` : o ? `#${o.ticket}` : "";
+  if (!p && o) {
+    const buy = o.side === "BUY";
+    const now = buy ? s.ask : s.bid;
+    const away = now != null ? Math.abs(now - o.price) : null;
+    box.append(h("div", { class: "pos-top" },
+      h("div", {},
+        h("div", { class: "pos-meta" },
+          h("span", { class: `side ${buy ? "buy" : "sell"}` }, `${buy ? "▲" : "▼"} ${o.side} ${o.kind.toUpperCase()}`),
+          h("span", { class: "num", style: "font-weight:600" }, `${o.volume} lot`),
+          h("span", { class: "muted num" }, `@ ${fmt(o.price)}`)),
+        o.source ? h("div", { class: "muted", style: "font-size:12.5px;margin-top:6px" }, `จากช่อง ${o.source}`) : null),
+      h("div", { class: "float" },
+        h("div", { class: "v", style: "font-size:18px;color:var(--gold)" }, "⏳ รอราคา"),
+        h("div", { class: "k num" }, away != null ? `ห่างอีก ${fmt(away)}` : ""))));
+    box.append(h("div", { class: "lad-labels", style: "margin-top:18px" },
+      h("div", {}, h("div", { class: "k" }, "SL"), h("div", { class: "v num down" }, fmt(o.sl))),
+      h("div", {}, h("div", { class: "k" }, "ราคาเข้า"), h("div", { class: "v num" }, fmt(o.price))),
+      h("div", {}, h("div", { class: "k" }, "TP"), h("div", { class: "v num up" }, o.tp ? fmt(o.tp) : "—"))));
+    box.append(h("div", { class: "pos-foot" },
+      h("span", {}, "บอทวางออเดอร์รอไว้ใน MT5 แล้ว"),
+      h("span", { class: "num" }, o.expires_at ? `ยกเลิกเองถ้าไม่ถึงภายใน ${new Date(o.expires_at).toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })} น.` : "")));
+    return;
+  }
   if (!p) {
     const riskMoney = s.account?.balance && s.risk_pct ? s.account.balance * s.risk_pct / 100 : null;
     box.append(h("div", { class: "empty" },
@@ -765,7 +792,9 @@ function renderPosition(s, cur) {
       h("div", { class: "pos-meta" },
         h("span", { class: `side ${buy ? "buy" : "sell"}` }, buy ? "▲ BUY" : "▼ SELL"),
         h("span", { class: "num", style: "font-weight:600" }, `${p.volume} lot`),
-        h("span", { class: "muted num" }, `@ ${fmt(p.price_open)}`))),
+        h("span", { class: "muted num" }, `@ ${fmt(p.price_open)}`),
+        p.partial_done ? h("span", { class: "chip open", title: "ปิดไปครึ่งหนึ่งที่ +1R และเลื่อน SL มาที่ราคาเข้าแล้ว" }, "🔒 บังทุนแล้ว") : null),
+      p.source ? h("div", { class: "muted", style: "font-size:12.5px;margin-top:6px" }, `จากช่อง ${p.source}`) : null),
     h("div", { class: "float" }, h("div", { class: "v" }, pnlNode(p.profit, cur)), h("div", { class: "k num" }, usdLine(p.profit, cur, true) || "กำไร/ขาดทุนตอนนี้"))));
 
   // price ladder: SL always on the left, TP on the right, whatever the direction
@@ -995,19 +1024,20 @@ function niceStep(raw) {
 function renderTrades(cur) {
   const list = $("trades"); list.replaceChildren();
   const all = state.data.trades;
-  $("tr-count").textContent = all.length ? `${all.filter((t) => t.closed_at).length} ไม้ที่ปิดแล้ว` : "";
+  $("tr-count").textContent = all.length ? `${all.filter((t) => t.closed_at && t.pnl != null).length} ไม้ที่ปิดแล้ว` : "";
   if (!all.length) { list.append(h("div", { class: "empty" }, h("b", {}, "ยังไม่มีการเทรด"), "ไม้แรกจะขึ้นที่นี่ทันทีที่บอทเปิด")); }
   for (const t of all.slice(0, state.showTrades)) {
     const buy = t.side === "BUY";
     const open = !t.closed_at;
+    const waiting = t.status === "pending";
     const pct = !open && t.balance_at_open ? Number(t.pnl) / Number(t.balance_at_open) * 100 : null;
     list.append(h("div", { class: "row" },
       h("div", { class: `side-ic ${buy ? "buy" : "sell"}`, "aria-label": t.side }, buy ? "▲" : "▼"),
       h("div", { style: "min-width:0" },
         h("div", { class: "t1" }, h("span", { class: "num" }, `${t.side} ${t.volume} lot`),
-          open ? h("span", { class: "chip open" }, "เปิดอยู่") : null,
+          waiting ? h("span", { class: "chip open" }, `รอเข้า ${String(t.order_kind || "").toUpperCase()}`) : open ? h("span", { class: "chip open" }, "เปิดอยู่") : null,
           !open && t.pnl < 0 && !t.counted_loss ? h("span", { class: "chip nc", title: "ขาดทุนไม่ถึงเกณฑ์ ไม่นับเป็นไม้แพ้" }, "ไม่นับแพ้") : null),
-        h("div", { class: "t2 num" }, `@ ${fmt(t.price_open)} · ${fullTime(open ? t.opened_at : t.closed_at)}`)),
+        h("div", { class: "t2 num" }, `@ ${fmt(t.price_open)} · ${fullTime(open ? t.opened_at : t.closed_at)}${t.source ? " · " + t.source : ""}`)),
       h("div", { class: "r" },
         h("div", { class: "t1" }, open ? h("span", { class: "muted" }, "—") : pnlNode(Number(t.pnl), "")),
         h("div", { class: "t2 num" }, pct == null ? "" : `${pct >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(2)}%`))));
