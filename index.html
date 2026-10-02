@@ -712,6 +712,7 @@ function render() {
   // mode badge
   const mb = $("mode-badge");
   if (s.mode === "watch") { mb.className = "badge"; mb.textContent = "WATCH · ไม่ส่งออเดอร์"; }
+  else if (s.mode === "manual") { mb.className = "badge live"; mb.textContent = "กดเองในแอป · ราคาจริง"; }
   else if (acc.is_demo) { mb.className = "badge"; mb.textContent = isCent(cur) ? "DEMO · CENT" : "DEMO"; }
   else if (status) { mb.className = "badge live"; mb.textContent = isCent(cur) ? "LIVE · CENT" : "LIVE"; }
 
